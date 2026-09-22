@@ -180,6 +180,16 @@ The volumes survive container restarts, host reboots, image updates, and
 Persistent Storage. Do not select an option that removes persistent volumes
 during a redeploy.
 
+The SAPCC health check connects to its HTTPS endpoint and accepts its initial
+self-signed certificate. Its 120-second start period allows the JVM and SAPCC
+application to initialize before failures count toward container health.
+
+The `8443:8443` mapping preserves SAPCC TLS when accessed directly with
+`https://<server>:8443`. A Coolify domain terminates public TLS at its reverse
+proxy, so that proxy must also use HTTPS for the upstream connection to port
+8443 and trust the SAPCC certificate. Otherwise SAPCC returns
+`This combination of host and port requires TLS`.
+
 To verify TCP connectivity from SAPCC after all services have started:
 
 ```sh
