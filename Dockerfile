@@ -3,8 +3,8 @@ FROM rockylinux:9
 ################################################################
 # DEFINE sapcc and jvm version
 ################################################################
-ARG SAPCC_VERSION=2.18.0
-ARG SAPJVM_VERSION=8.1.104
+ARG SAPCC_VERSION=2.19.1
+ARG SAPJVM_VERSION=8.1.112
 
 ################################################################
 # Upgrade + install dependencies
