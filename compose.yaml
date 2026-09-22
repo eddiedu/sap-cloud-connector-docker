@@ -29,8 +29,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB:-sapcc}
       POSTGRES_USER: ${POSTGRES_USER:-sapcc}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres-dev-password}
-    expose:
-      - "5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -56,8 +54,6 @@ services:
       - --
     command:
       - "sapcc:${SFTP_PASSWORD:-sftp-dev-password}:1001:1001:upload"
-    expose:
-      - "22"
     volumes:
       - sftp_data:/home/sapcc/upload
       - sftp_ssh_config:/etc/ssh
