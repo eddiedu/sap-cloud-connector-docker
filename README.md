@@ -137,6 +137,60 @@ The Dockerfile is based on [https://github.com/PaxSchweiz/SAPHCPConnector/blob/m
 
     A proxy can be set manually for each SAPCP connection after [logging on](https://localhost:8443) to the SAPCC using a browser. Make sure to use the correct proxy settings (incl. credentials if required), otherwise your SAPCC might not be able to connect to your SAPCC account.
 
+## Docker Compose with PostgreSQL and SFTP
+
+The included `compose.yaml` starts SAP Cloud Connector, PostgreSQL, and an
+SFTP server on the same private Docker network. Copy the example configuration
+and replace the development passwords before starting the services:
+
+```sh
+cp .env.example .env
+docker compose up --build -d
+docker compose ps
+```
+
+Use the following addresses when configuring a backend in SAP Cloud Connector:
+
+| Service    | Host from SAPCC | Port from SAPCC | Host access              |
+|:-----------|:-----------------|:----------------|:-------------------------|
+| PostgreSQL | `postgres`       | `5432`          | Internal only            |
+| SFTP       | `sftp`           | `22`            | Internal only            |
+| SAPCC UI   | N/A              | N/A             | `https://localhost:8443` |
+
+Inside the SAPCC container, do not use `localhost` for PostgreSQL or SFTP:
+`localhost` refers to the SAPCC container itself. Docker Compose resolves the
+service names `postgres` and `sftp` on the shared network.
+
+The default database name and user are both `sapcc`. The default SFTP user is
+also `sapcc`, and its writable directory is `/upload`. Values can be changed in
+`.env`. PostgreSQL and SFTP are not published on the Docker host; only services
+on the private `sapcc_backend` network can reach them.
+
+All application data is stored in named Docker volumes:
+
+- `sapcc_config`, `sapcc_secure_config`, and `sapcc_logs` preserve SAPCC state;
+- `postgres_data` preserves the PostgreSQL database;
+- `sftp_data` preserves uploaded files;
+- `sftp_ssh_config` preserves the SFTP server identity and host keys.
+
+The volumes survive container restarts, host reboots, image updates, and
+`docker compose down`. When deploying with Coolify, keep these volumes as
+Persistent Storage. Do not select an option that removes persistent volumes
+during a redeploy.
+
+To verify TCP connectivity from SAPCC after all services have started:
+
+```sh
+docker compose exec sapcc \
+  bash -lc 'timeout 5 bash -c "</dev/tcp/postgres/5432"'
+docker compose exec sapcc \
+  bash -lc 'timeout 5 bash -c "</dev/tcp/sftp/22"'
+```
+
+Both commands exit with status `0` when the ports are reachable. To stop the
+services while preserving their data, run `docker compose down`. Adding `-v`
+also permanently deletes the SAPCC configuration, database, and SFTP volumes.
+
 ## Browsers
 
 Your browser will not trust the certificate of your SAPCC, and that's expected behavior. However, access must work on any browser.

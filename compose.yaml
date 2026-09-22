@@ -1,0 +1,88 @@
+services:
+  sapcc:
+    platform: ${SAPCC_PLATFORM:-linux/amd64}
+    build:
+      context: .
+      args:
+        SAPCC_PLATFORM: ${SAPCC_PLATFORM:-linux/amd64}
+        SAPCC_VERSION: ${SAPCC_VERSION:-2.19.1}
+        SAPJVM_VERSION: ${SAPJVM_VERSION:-8.1.112}
+    hostname: mysapcc
+    ports:
+      - "${SAPCC_HTTPS_PORT:-8443}:8443"
+    volumes:
+      - sapcc_config:/opt/sap/scc/config
+      - sapcc_secure_config:/opt/sap/scc/scc_config
+      - sapcc_logs:/opt/sap/scc/log
+    depends_on:
+      postgres:
+        condition: service_healthy
+      sftp:
+        condition: service_healthy
+    networks:
+      - sapcc_backend
+    restart: unless-stopped
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-sapcc}
+      POSTGRES_USER: ${POSTGRES_USER:-sapcc}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres-dev-password}
+    expose:
+      - "5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    networks:
+      - sapcc_backend
+    restart: unless-stopped
+
+  sftp:
+    image: atmoz/sftp:alpine
+    environment:
+      SFTP_USER: ${SFTP_USER:-sapcc}
+    entrypoint:
+      - /bin/sh
+      - -c
+      - |
+        chown 1001:1001 "/home/$${SFTP_USER}/upload"
+        exec /entrypoint "$$@"
+      - --
+    command:
+      - "${SFTP_USER:-sapcc}:${SFTP_PASSWORD:-sftp-dev-password}:1001:1001:upload"
+    expose:
+      - "22"
+    volumes:
+      - sftp_data:/home/${SFTP_USER:-sapcc}/upload
+      - sftp_ssh_config:/etc/ssh
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - nc -z 127.0.0.1 22
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    networks:
+      - sapcc_backend
+    restart: unless-stopped
+
+networks:
+  sapcc_backend:
+    driver: bridge
+
+volumes:
+  sapcc_config:
+  sapcc_secure_config:
+  sapcc_logs:
+  postgres_data:
+  sftp_data:
+  sftp_ssh_config:

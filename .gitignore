@@ -4,6 +4,7 @@ dist
 
 # user project config
 .user.nabi.json
+.env
 
 # Eclipse
 .project

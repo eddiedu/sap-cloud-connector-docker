@@ -1,4 +1,5 @@
-FROM rockylinux:9
+ARG SAPCC_PLATFORM=linux/amd64
+FROM --platform=${SAPCC_PLATFORM} rockylinux:9
 
 ################################################################
 # DEFINE sapcc and jvm version
@@ -27,15 +28,18 @@ RUN dnf -y install which unzip wget net-tools less sysstat procps-ng; dnf clean 
 
 WORKDIR /tmp/sapdownloads
 
-# download sapcc and sapjvm + unzip sapcc + install sapjvm and then install sapcc
-# ATTENTION:
-# This automated download automatically accepts SAP's End User License Agreement (EULA).
-# Thus, when using this docker file as is you automatically accept SAP's EULA!
-RUN wget --no-check-certificate --no-cookies --header "Cookie: eula_3_2_agreed=tools.hana.ondemand.com/developer-license-3_2.txt; path=/;" -S https://tools.hana.ondemand.com/additional/sapcc-$SAPCC_VERSION-linux-x64.zip && \
-    wget --no-check-certificate --no-cookies --header "Cookie: eula_3_2_agreed=tools.hana.ondemand.com/developer-license-3_2.txt; path=/;" -S https://tools.hana.ondemand.com/additional/sapjvm-$SAPJVM_VERSION-linux-x64.rpm && \
-    unzip sapcc-$SAPCC_VERSION-linux-x64.zip && \
-    rpm -i sapjvm-$SAPJVM_VERSION-linux-x64.rpm && \
-		rpm -i com.sap.scc-ui-${SAPCC_VERSION}*.x86_64.rpm
+# Downloading these files accepts the applicable SAP license agreements.
+RUN wget --no-cookies --tries=5 --timeout=60 \
+        --header="Cookie: eula_cloud_connector_license_v1_2026_agreed=tools.hana.ondemand.com/cloud-connector-agreement_v1.2026.txt" \
+        "https://tools.hana.ondemand.com/additional/sapcc-${SAPCC_VERSION}-linux-x64.zip" && \
+    wget --no-cookies --tries=5 --timeout=60 \
+        --header="Cookie: eula_3_2_agreed=tools.hana.ondemand.com/developer-license-3_2.txt" \
+        "https://tools.hana.ondemand.com/additional/sapjvm-${SAPJVM_VERSION}-linux-x64.rpm" && \
+    unzip -tq "sapcc-${SAPCC_VERSION}-linux-x64.zip" && \
+    unzip "sapcc-${SAPCC_VERSION}-linux-x64.zip" && \
+    rpm -i "sapjvm-${SAPJVM_VERSION}-linux-x64.rpm" && \
+    rpm -i com.sap.scc-ui-${SAPCC_VERSION}*.x86_64.rpm && \
+    rm -rf /tmp/sapdownloads/*
 
 # set JAVA_HOME because this is needed by go.sh below, others are calulated
 ENV JAVA_HOME=/opt/sapjvm_8/
