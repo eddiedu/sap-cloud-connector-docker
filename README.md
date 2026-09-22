@@ -162,9 +162,11 @@ Inside the SAPCC container, do not use `localhost` for PostgreSQL or SFTP:
 service names `postgres` and `sftp` on the shared network.
 
 The default database name and user are both `sapcc`. The default SFTP user is
-also `sapcc`, and its writable directory is `/upload`. Values can be changed in
-`.env`. PostgreSQL and SFTP are not published on the Docker host; only services
-on the private `sapcc_backend` network can reach them.
+also `sapcc`, and its writable directory is `/upload`. The SFTP username and
+volume path are intentionally fixed because Coolify does not allow variable
+substitution in volume targets; its password can be changed in `.env`.
+PostgreSQL and SFTP are not published on the Docker host; only services on the
+private `sapcc_backend` network can reach them.
 
 All application data is stored in named Docker volumes:
 

@@ -47,21 +47,19 @@ services:
 
   sftp:
     image: atmoz/sftp:alpine
-    environment:
-      SFTP_USER: ${SFTP_USER:-sapcc}
     entrypoint:
       - /bin/sh
       - -c
       - |
-        chown 1001:1001 "/home/$${SFTP_USER}/upload"
+        chown 1001:1001 /home/sapcc/upload
         exec /entrypoint "$$@"
       - --
     command:
-      - "${SFTP_USER:-sapcc}:${SFTP_PASSWORD:-sftp-dev-password}:1001:1001:upload"
+      - "sapcc:${SFTP_PASSWORD:-sftp-dev-password}:1001:1001:upload"
     expose:
       - "22"
     volumes:
-      - sftp_data:/home/${SFTP_USER:-sapcc}/upload
+      - sftp_data:/home/sapcc/upload
       - sftp_ssh_config:/etc/ssh
     healthcheck:
       test:
